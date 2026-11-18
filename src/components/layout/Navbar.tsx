@@ -197,12 +197,14 @@ export const Navbar: React.FC<{ onOpenSettings: () => void }> = ({ onOpenSetting
         </div>
 
         {/* Navigation Tabs Bar */}
-        <nav className="flex space-x-1 overflow-x-auto no-scrollbar py-2 border-t border-slate-100 text-xs">
+        <nav role="tablist" aria-label="Main navigation" className="flex space-x-1 overflow-x-auto no-scrollbar py-2 border-t border-slate-100 text-xs">
           {navItems.map((item) => {
             const isActive = activeTab === item.id;
             return (
               <button
                 key={item.id}
+                role="tab"
+                aria-selected={isActive}
                 onClick={() => setActiveTab(item.id)}
                 className={`flex items-center space-x-1.5 px-3 py-2 rounded-xl font-medium whitespace-nowrap transition-all ${
                   isActive

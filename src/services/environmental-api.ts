@@ -6,6 +6,44 @@
 import { AirQualityData, DailyForecastItem, HourlyForecastItem, LocationOption, PollutantValues, WeatherValues } from '../types';
 import { calculateOverallAQI, getAQICategory } from '../utils/aqi-calculator';
 
+// ---------------------------------------------------------------------------
+// In-memory 15-minute TTL cache for environmental API responses.
+// Cache key: rounded lat/lon (3 dp) to avoid trivial misses from floating-point
+// drift while still differentiating genuinely distinct locations.
+// ---------------------------------------------------------------------------
+const CACHE_TTL_MS = 15 * 60 * 1000; // 15 minutes
+
+interface CacheEntry {
+  data: AirQualityData;
+  fetchedAt: number;
+}
+
+const _envCache = new Map<string, CacheEntry>();
+
+function _cacheKey(lat: number, lon: number): string {
+  return `${lat.toFixed(3)},${lon.toFixed(3)}`;
+}
+
+function _getCached(lat: number, lon: number): AirQualityData | null {
+  const key = _cacheKey(lat, lon);
+  const entry = _envCache.get(key);
+  if (!entry) return null;
+  if (Date.now() - entry.fetchedAt > CACHE_TTL_MS) {
+    _envCache.delete(key);
+    return null;
+  }
+  return entry.data;
+}
+
+function _setCached(lat: number, lon: number, data: AirQualityData): void {
+  _envCache.set(_cacheKey(lat, lon), { data, fetchedAt: Date.now() });
+}
+
+/** Exposed for testing only — clears the in-memory cache. */
+export function _clearEnvCache(): void {
+  _envCache.clear();
+}
+
 // Well-known locations for quick selection and offline demonstration
 export const PRESET_LOCATIONS: LocationOption[] = [
   {
@@ -131,6 +169,13 @@ export async function searchLocations(query: string): Promise<LocationOption[]> 
 export async function fetchEnvironmentalData(location: LocationOption): Promise<AirQualityData> {
   const { latitude, longitude } = location;
 
+  // Return cached live data if available and fresh (within 15-minute TTL).
+  // Simulated/demo data is never served from the cache.
+  const cached = _getCached(latitude, longitude);
+  if (cached && !cached.isSimulated) {
+    return cached;
+  }
+
   try {
     // Concurrent fetch for both Air Quality and Weather
     const [aqResponse, weatherResponse] = await Promise.all([
@@ -244,7 +289,7 @@ export async function fetchEnvironmentalData(location: LocationOption): Promise<
     const healthPrecautions = generateHealthPrecautions(computedAQI, pollutants, weather);
     const sensitiveGroupsWarning = generateSensitiveWarnings(computedAQI);
 
-    return {
+    const result: AirQualityData = {
       aqi: computedAQI,
       standard: 'US_AQI',
       standardLabel: 'US EPA AQI Standard (0-500)',
@@ -262,6 +307,11 @@ export async function fetchEnvironmentalData(location: LocationOption): Promise<
       healthPrecautions,
       sensitiveGroupsWarning,
     };
+
+    // Store live result in cache for 15 minutes
+    _setCached(latitude, longitude, result);
+
+    return result;
   } catch (error) {
     console.warn(`Falling back to verified simulation data for ${location.city}:`, error);
     return getDemonstrationEnvironmentalData(location);

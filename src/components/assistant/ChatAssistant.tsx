@@ -68,21 +68,21 @@ export const ChatAssistant: React.FC = () => {
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  // Render markdown-like formatting (bold, headers, bullet points) cleanly without extra heavy dependencies
+  // Render markdown-like formatting (bold, headers, bullet points) strictly as safe React elements (No XSS)
   const formatContent = (content: string) => {
     const lines = content.split('\n');
     return lines.map((line, idx) => {
       if (line.startsWith('### ')) {
         return (
           <h4 key={idx} className="font-extrabold text-sm sm:text-base text-slate-900 mt-3 mb-1">
-            {line.replace('### ', '')}
+            {renderSafeInlineMarkdown(line.replace('### ', ''))}
           </h4>
         );
       }
       if (line.startsWith('## ')) {
         return (
           <h3 key={idx} className="font-black text-base text-slate-900 mt-3 mb-1">
-            {line.replace('## ', '')}
+            {renderSafeInlineMarkdown(line.replace('## ', ''))}
           </h3>
         );
       }
@@ -90,14 +90,14 @@ export const ChatAssistant: React.FC = () => {
         const itemText = line.substring(2);
         return (
           <li key={idx} className="ml-4 list-disc text-slate-700 text-xs my-0.5 leading-relaxed">
-            <span dangerouslySetInnerHTML={{ __html: renderInlineMarkdown(itemText) }} />
+            <span>{renderSafeInlineMarkdown(itemText)}</span>
           </li>
         );
       }
       if (line.match(/^\d+\.\s/)) {
         return (
           <li key={idx} className="ml-4 list-decimal text-slate-700 text-xs my-0.5 leading-relaxed">
-            <span dangerouslySetInnerHTML={{ __html: renderInlineMarkdown(line.replace(/^\d+\.\s/, '')) }} />
+            <span>{renderSafeInlineMarkdown(line.replace(/^\d+\.\s/, ''))}</span>
           </li>
         );
       }
@@ -105,20 +105,41 @@ export const ChatAssistant: React.FC = () => {
         return <div key={idx} className="h-2"></div>;
       }
       return (
-        <p
-          key={idx}
-          className="text-slate-700 text-xs leading-relaxed my-1"
-          dangerouslySetInnerHTML={{ __html: renderInlineMarkdown(line) }}
-        />
+        <p key={idx} className="text-slate-700 text-xs leading-relaxed my-1">
+          {renderSafeInlineMarkdown(line)}
+        </p>
       );
     });
   };
 
-  const renderInlineMarkdown = (text: string) => {
-    return text
-      .replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold text-slate-900">$1</strong>')
-      .replace(/\*(.*?)\*/g, '<em class="italic">$1</em>')
-      .replace(/`([^`]+)`/g, '<code class="px-1 py-0.5 rounded bg-slate-200 text-slate-800 font-mono text-[11px]">$1</code>');
+  const renderSafeInlineMarkdown = (text: string): React.ReactNode => {
+    const regex = /(\*\*[^*]+\*\*|`[^`]+`|\*[^*]+\*)/g;
+    const parts = text.split(regex);
+
+    return parts.map((part, i) => {
+      if (part.startsWith('**') && part.endsWith('**') && part.length >= 4) {
+        return (
+          <strong key={i} className="font-bold text-slate-900">
+            {part.slice(2, -2)}
+          </strong>
+        );
+      }
+      if (part.startsWith('`') && part.endsWith('`') && part.length >= 2) {
+        return (
+          <code key={i} className="px-1 py-0.5 rounded bg-slate-200 text-slate-800 font-mono text-[11px]">
+            {part.slice(1, -1)}
+          </code>
+        );
+      }
+      if (part.startsWith('*') && part.endsWith('*') && part.length >= 2) {
+        return (
+          <em key={i} className="italic">
+            {part.slice(1, -1)}
+          </em>
+        );
+      }
+      return part;
+    });
   };
 
   return (

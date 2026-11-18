@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import {
   Wind,
@@ -27,6 +27,16 @@ import {
 export const AirQualityDashboard: React.FC = () => {
   const { user, envData, isLoadingEnv, setActiveTab } = useApp();
   const [selectedForecastMetric, setSelectedForecastMetric] = useState<'aqi' | 'pm2_5' | 'pm10'>('aqi');
+  const [aqiAnnouncement, setAqiAnnouncement] = useState<string>('');
+
+  // Announce AQI changes to screen readers via aria-live
+  useEffect(() => {
+    if (envData?.aqi !== undefined && envData.category) {
+      setAqiAnnouncement(
+        `Air Quality Index updated: ${envData.aqi} — ${envData.category} for ${user.location.city}.`
+      );
+    }
+  }, [envData?.aqi, envData?.category, user.location.city]);
 
   if (isLoadingEnv) {
     return (
@@ -67,20 +77,20 @@ export const AirQualityDashboard: React.FC = () => {
   const pollutantItems = [
     {
       label: 'PM2.5',
-      fullName: 'Fine Inhalable Particulate Matter (<2.5 µm)',
+      fullName: 'Fine Inhalable Particulate Matter (<2.5 Âµm)',
       value: pollutants.pm2_5,
-      unit: 'µg/m³',
-      safeThreshold: '15 µg/m³ (WHO 24-hr guideline)',
+      unit: 'Âµg/mÂ³',
+      safeThreshold: '15 Âµg/mÂ³ (WHO 24-hr guideline)',
       description: 'Penetrates deep into alveolar gas-exchange regions and enters the bloodstream.',
       isDominant: dominantPollutant === 'PM2.5',
       severity: (pollutants.pm2_5 ?? 0) > 35 ? 'danger' : (pollutants.pm2_5 ?? 0) > 15 ? 'warning' : 'safe',
     },
     {
       label: 'PM10',
-      fullName: 'Coarse Inhalable Particles (<10 µm)',
+      fullName: 'Coarse Inhalable Particles (<10 Âµm)',
       value: pollutants.pm10,
-      unit: 'µg/m³',
-      safeThreshold: '45 µg/m³ (WHO 24-hr guideline)',
+      unit: 'Âµg/mÂ³',
+      safeThreshold: '45 Âµg/mÂ³ (WHO 24-hr guideline)',
       description: 'Road dust, industrial mechanical grinding, and heavy vehicular friction.',
       isDominant: dominantPollutant === 'PM10',
       severity: (pollutants.pm10 ?? 0) > 150 ? 'danger' : (pollutants.pm10 ?? 0) > 45 ? 'warning' : 'safe',
@@ -89,8 +99,8 @@ export const AirQualityDashboard: React.FC = () => {
       label: 'NO2',
       fullName: 'Nitrogen Dioxide',
       value: pollutants.no2,
-      unit: 'µg/m³',
-      safeThreshold: '25 µg/m³ (WHO 24-hr guideline)',
+      unit: 'Âµg/mÂ³',
+      safeThreshold: '25 Âµg/mÂ³ (WHO 24-hr guideline)',
       description: 'Formed predominantly from high-temperature motor vehicle combustion.',
       isDominant: dominantPollutant === 'NO2',
       severity: (pollutants.no2 ?? 0) > 50 ? 'danger' : (pollutants.no2 ?? 0) > 25 ? 'warning' : 'safe',
@@ -99,8 +109,8 @@ export const AirQualityDashboard: React.FC = () => {
       label: 'O3',
       fullName: 'Surface Ground-Level Ozone',
       value: pollutants.o3,
-      unit: 'µg/m³',
-      safeThreshold: '100 µg/m³ (WHO 8-hr guideline)',
+      unit: 'Âµg/mÂ³',
+      safeThreshold: '100 Âµg/mÂ³ (WHO 8-hr guideline)',
       description: 'Secondary photochemical smog pollutant generated in sunlight.',
       isDominant: dominantPollutant === 'O3',
       severity: (pollutants.o3 ?? 0) > 100 ? 'danger' : 'safe',
@@ -109,8 +119,8 @@ export const AirQualityDashboard: React.FC = () => {
       label: 'SO2',
       fullName: 'Sulphur Dioxide',
       value: pollutants.so2,
-      unit: 'µg/m³',
-      safeThreshold: '40 µg/m³ (WHO 24-hr guideline)',
+      unit: 'Âµg/mÂ³',
+      safeThreshold: '40 Âµg/mÂ³ (WHO 24-hr guideline)',
       description: 'Emitted from thermal coal power stations, brick kilns, and diesel fuels.',
       isDominant: dominantPollutant === 'SO2',
       severity: (pollutants.so2 ?? 0) > 40 ? 'danger' : 'safe',
@@ -119,8 +129,8 @@ export const AirQualityDashboard: React.FC = () => {
       label: 'CO',
       fullName: 'Carbon Monoxide',
       value: pollutants.co,
-      unit: 'µg/m³',
-      safeThreshold: '4,000 µg/m³ (WHO 24-hr guideline)',
+      unit: 'Âµg/mÂ³',
+      safeThreshold: '4,000 Âµg/mÂ³ (WHO 24-hr guideline)',
       description: 'Incomplete fossil fuel and biomass combustion byproduct.',
       isDominant: dominantPollutant === 'CO',
       severity: (pollutants.co ?? 0) > 4000 ? 'danger' : 'safe',
@@ -129,6 +139,10 @@ export const AirQualityDashboard: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {/* Accessible AQI live announcement for screen readers */}
+      <div aria-live="polite" aria-atomic="true" className="sr-only">
+        {aqiAnnouncement}
+      </div>
       {/* Top Banner: Location & Data Provenance */}
       <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-sm relative overflow-hidden">
         <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-emerald-100/40 via-teal-50/20 to-transparent rounded-full blur-3xl pointer-events-none -mr-20 -mt-20"></div>
@@ -244,7 +258,7 @@ export const AirQualityDashboard: React.FC = () => {
                 <Thermometer className="w-3.5 h-3.5 mr-1 text-rose-500" />
                 <span className="text-[10px] font-semibold">Temp</span>
               </div>
-              <span className="text-sm font-bold text-slate-800">{weather.temperature}°C</span>
+              <span className="text-sm font-bold text-slate-800">{weather.temperature}Â°C</span>
             </div>
             <div className="p-2.5 rounded-2xl bg-slate-50">
               <div className="flex items-center justify-center text-slate-500 mb-1">
@@ -297,7 +311,7 @@ export const AirQualityDashboard: React.FC = () => {
 
                   <div className="flex items-baseline space-x-1.5">
                     <span className="text-2xl font-black text-slate-900">
-                      {hasValue ? p.value : '—'}
+                      {hasValue ? p.value : 'â€”'}
                     </span>
                     <span className="text-xs text-slate-500 font-medium">{p.unit}</span>
                   </div>
@@ -318,7 +332,7 @@ export const AirQualityDashboard: React.FC = () => {
               <div>
                 <strong className="font-bold">Winter Atmospheric Inversion Detected:</strong>
                 <p className="mt-0.5 text-purple-800 text-[11px] leading-relaxed">
-                  Cold surface temperatures ({weather.temperature}°C) coupled with low dispersion wind ({weather.windSpeed} km/h) have created a thermal boundary layer trapping vehicular and industrial smoke near ground level. Smoke cannot disperse vertically.
+                  Cold surface temperatures ({weather.temperature}Â°C) coupled with low dispersion wind ({weather.windSpeed} km/h) have created a thermal boundary layer trapping vehicular and industrial smoke near ground level. Smoke cannot disperse vertically.
                 </p>
               </div>
             </div>
@@ -355,7 +369,7 @@ export const AirQualityDashboard: React.FC = () => {
                 selectedForecastMetric === 'pm2_5' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'
               }`}
             >
-              PM2.5 (µg/m³)
+              PM2.5 (Âµg/mÂ³)
             </button>
             <button
               onClick={() => setSelectedForecastMetric('pm10')}
@@ -363,7 +377,7 @@ export const AirQualityDashboard: React.FC = () => {
                 selectedForecastMetric === 'pm10' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'
               }`}
             >
-              PM10 (µg/m³)
+              PM10 (Âµg/mÂ³)
             </button>
           </div>
         </div>
@@ -389,7 +403,7 @@ export const AirQualityDashboard: React.FC = () => {
                   color: '#fff',
                   fontSize: '12px',
                 }}
-                formatter={(val: any) => [`${val} ${selectedForecastMetric === 'aqi' ? 'AQI' : 'µg/m³'}`, 'Forecast']}
+                formatter={(val: any) => [`${val} ${selectedForecastMetric === 'aqi' ? 'AQI' : 'Âµg/mÂ³'}`, 'Forecast']}
                 labelFormatter={(label) => `Time: ${label}`}
               />
               <Area

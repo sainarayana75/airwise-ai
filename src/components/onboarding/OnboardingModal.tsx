@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '../../context/AppContext';
 import {
   Wind,
@@ -12,6 +12,13 @@ import { LocationOption } from '../../types';
 export const OnboardingModal: React.FC = () => {
   const { isFirstVisit, setIsFirstVisit, updateLocation, user } = useApp();
   const [selectedLoc, setSelectedLoc] = useState<LocationOption>(user.location);
+  const dialogRef = useRef<HTMLDivElement>(null);
+
+  // Focus dialog content on open
+  useEffect(() => {
+    if (!isFirstVisit) return;
+    dialogRef.current?.focus();
+  }, [isFirstVisit]);
 
   if (!isFirstVisit) return null;
 
@@ -21,8 +28,18 @@ export const OnboardingModal: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-md animate-in fade-in">
-      <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-slate-200">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-md animate-in fade-in"
+      aria-hidden="true"
+    >
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="onboarding-dialog-title"
+        tabIndex={-1}
+        className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-slate-200 outline-none"
+      >
         <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-700 to-teal-500 text-white flex items-center justify-center mb-4 shadow-lg shadow-emerald-700/20">
           <Wind className="w-6 h-6 animate-pulse" />
         </div>
@@ -31,7 +48,7 @@ export const OnboardingModal: React.FC = () => {
           Virtual PromptWars Challenge
         </span>
 
-        <h2 className="text-xl sm:text-2xl font-black text-slate-900 mt-2 tracking-tight">
+        <h2 id="onboarding-dialog-title" className="text-xl sm:text-2xl font-black text-slate-900 mt-2 tracking-tight">
           Welcome to AirWise AI
         </h2>
         <p className="text-xs sm:text-sm text-slate-500 mt-1 leading-relaxed">
@@ -48,6 +65,7 @@ export const OnboardingModal: React.FC = () => {
               <button
                 key={loc.id}
                 onClick={() => setSelectedLoc(loc)}
+                aria-pressed={selectedLoc.city === loc.city}
                 className={`p-3 rounded-2xl text-left border text-xs font-semibold transition-all ${
                   selectedLoc.city === loc.city
                     ? 'bg-emerald-600 text-white border-emerald-600 shadow-md'

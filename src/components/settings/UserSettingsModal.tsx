@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '../../context/AppContext';
 import {
   X,
@@ -13,6 +13,7 @@ import { AgeGroup, BudgetLevel, CommuteMode, FamilyMember, HomeType, OutdoorPref
 
 export const UserSettingsModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
   const { user, updateUser } = useApp();
+  const dialogRef = useRef<HTMLDivElement>(null);
 
   // Local editable copy
   const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>(user.familyMembers);
@@ -24,6 +25,27 @@ export const UserSettingsModal: React.FC<{ isOpen: boolean; onClose: () => void 
   const [homeType, setHomeType] = useState<HomeType>(user.homeType);
   const [hasPurifier, setHasPurifier] = useState<boolean>(user.hasAirPurifier);
   const [hasExhaust, setHasExhaust] = useState<boolean>(user.hasKitchenExhaust);
+
+  // Focus first focusable element when modal opens; restore focus on close
+  useEffect(() => {
+    if (!isOpen) return;
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    const focusable = dialog.querySelectorAll<HTMLElement>(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    );
+    focusable[0]?.focus();
+  }, [isOpen]);
+
+  // Escape key closes modal
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
@@ -63,18 +85,28 @@ export const UserSettingsModal: React.FC<{ isOpen: boolean; onClose: () => void 
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in">
-      <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in"
+      aria-hidden="true"
+    >
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="settings-dialog-title"
+        className="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden"
+      >
         {/* Header */}
         <div className="p-5 sm:p-6 border-b border-slate-100 flex items-center justify-between">
           <div>
-            <h3 className="text-lg font-black text-slate-900">Household & Lifestyle Profile Context</h3>
+            <h3 id="settings-dialog-title" className="text-lg font-black text-slate-900">Household & Lifestyle Profile Context</h3>
             <p className="text-xs text-slate-500 mt-0.5">
               AirWise AI adapts recommendations dynamically when family or budget constraints change.
             </p>
           </div>
           <button
             onClick={onClose}
+            aria-label="Close settings"
             className="p-1.5 text-slate-400 hover:text-slate-600 rounded-xl hover:bg-slate-100"
           >
             <X className="w-5 h-5" />
