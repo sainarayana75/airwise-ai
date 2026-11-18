@@ -403,7 +403,7 @@ export const AirQualityDashboard: React.FC = () => {
                   color: '#fff',
                   fontSize: '12px',
                 }}
-                formatter={(val: any) => [`${val} ${selectedForecastMetric === 'aqi' ? 'AQI' : 'Âµg/mÂ³'}`, 'Forecast']}
+                formatter={(val: number | string | (number | string)[] | undefined) => [`${val ?? 0} ${selectedForecastMetric === 'aqi' ? 'AQI' : 'µg/m³'}`, 'Forecast']}
                 labelFormatter={(label) => `Time: ${label}`}
               />
               <Area

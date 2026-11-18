@@ -24,7 +24,8 @@ function _cacheKey(lat: number, lon: number): string {
   return `${lat.toFixed(3)},${lon.toFixed(3)}`;
 }
 
-function _getCached(lat: number, lon: number): AirQualityData | null {
+/** Exposed for testing only — retrieves item from cache if unexpired */
+export function _getCached(lat: number, lon: number): AirQualityData | null {
   const key = _cacheKey(lat, lon);
   const entry = _envCache.get(key);
   if (!entry) return null;
@@ -35,7 +36,8 @@ function _getCached(lat: number, lon: number): AirQualityData | null {
   return entry.data;
 }
 
-function _setCached(lat: number, lon: number, data: AirQualityData): void {
+/** Exposed for testing only — stores an item into the cache */
+export function _setCached(lat: number, lon: number, data: AirQualityData): void {
   _envCache.set(_cacheKey(lat, lon), { data, fetchedAt: Date.now() });
 }
 
@@ -127,6 +129,16 @@ export function interpretWeatherCode(code: number): string {
   return 'Cloudy / Smoggy';
 }
 
+interface OpenMeteoGeocodingItem {
+  id?: number | string;
+  name: string;
+  country?: string;
+  admin1?: string;
+  latitude: number;
+  longitude: number;
+  timezone?: string;
+}
+
 /**
  * Search locations using Open-Meteo Geocoding API
  */
@@ -139,12 +151,12 @@ export async function searchLocations(query: string): Promise<LocationOption[]> 
     const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
     if (!res.ok) throw new Error(`Geocoding HTTP error: ${res.status}`);
     
-    const data = await res.json();
+    const data = (await res.json()) as { results?: OpenMeteoGeocodingItem[] };
     if (!data.results || !Array.isArray(data.results)) {
       return [];
     }
 
-    return data.results.map((r: any) => ({
+    return data.results.map((r: OpenMeteoGeocodingItem) => ({
       id: `${r.id || r.name}-${r.latitude}-${r.longitude}`,
       city: r.name,
       country: r.country || '',
@@ -268,7 +280,7 @@ export async function fetchEnvironmentalData(location: LocationOption): Promise<
       const startIndex = day * 24;
       const endIndex = startIndex + 24;
       if (hourlyAQ.us_aqi && hourlyAQ.us_aqi.length >= endIndex) {
-        const dayAqiSlice = hourlyAQ.us_aqi.slice(startIndex, endIndex).filter((v: any) => typeof v === 'number');
+        const dayAqiSlice = hourlyAQ.us_aqi.slice(startIndex, endIndex).filter((v: unknown): v is number => typeof v === 'number');
         if (dayAqiSlice.length > 0) {
           const avgAqi = Math.round(dayAqiSlice.reduce((a: number, b: number) => a + b, 0) / dayAqiSlice.length);
           const maxAqi = Math.round(Math.max(...dayAqiSlice));

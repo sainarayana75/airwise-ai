@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import {
   Wind,
@@ -8,17 +8,12 @@ import {
 } from 'lucide-react';
 import { PRESET_LOCATIONS } from '../../services/environmental-api';
 import { LocationOption } from '../../types';
+import { useFocusTrap } from '../../utils/useFocusTrap';
 
 export const OnboardingModal: React.FC = () => {
   const { isFirstVisit, setIsFirstVisit, updateLocation, user } = useApp();
   const [selectedLoc, setSelectedLoc] = useState<LocationOption>(user.location);
-  const dialogRef = useRef<HTMLDivElement>(null);
-
-  // Focus dialog content on open
-  useEffect(() => {
-    if (!isFirstVisit) return;
-    dialogRef.current?.focus();
-  }, [isFirstVisit]);
+  const dialogRef = useFocusTrap<HTMLDivElement>({ isOpen: isFirstVisit });
 
   if (!isFirstVisit) return null;
 
@@ -30,14 +25,12 @@ export const OnboardingModal: React.FC = () => {
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-md animate-in fade-in"
-      aria-hidden="true"
     >
       <div
         ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="onboarding-dialog-title"
-        tabIndex={-1}
         className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl border border-slate-200 outline-none"
       >
         <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-700 to-teal-500 text-white flex items-center justify-center mb-4 shadow-lg shadow-emerald-700/20">

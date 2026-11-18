@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import {
   X,
@@ -10,10 +10,11 @@ import {
   Check,
 } from 'lucide-react';
 import { AgeGroup, BudgetLevel, CommuteMode, FamilyMember, HomeType, OutdoorPreference, WorkSchedule } from '../../types';
+import { useFocusTrap } from '../../utils/useFocusTrap';
 
 export const UserSettingsModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({ isOpen, onClose }) => {
   const { user, updateUser } = useApp();
-  const dialogRef = useRef<HTMLDivElement>(null);
+  const dialogRef = useFocusTrap<HTMLDivElement>({ isOpen, onClose });
 
   // Local editable copy
   const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>(user.familyMembers);
@@ -25,27 +26,6 @@ export const UserSettingsModal: React.FC<{ isOpen: boolean; onClose: () => void 
   const [homeType, setHomeType] = useState<HomeType>(user.homeType);
   const [hasPurifier, setHasPurifier] = useState<boolean>(user.hasAirPurifier);
   const [hasExhaust, setHasExhaust] = useState<boolean>(user.hasKitchenExhaust);
-
-  // Focus first focusable element when modal opens; restore focus on close
-  useEffect(() => {
-    if (!isOpen) return;
-    const dialog = dialogRef.current;
-    if (!dialog) return;
-    const focusable = dialog.querySelectorAll<HTMLElement>(
-      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-    );
-    focusable[0]?.focus();
-  }, [isOpen]);
-
-  // Escape key closes modal
-  useEffect(() => {
-    if (!isOpen) return;
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
@@ -87,7 +67,6 @@ export const UserSettingsModal: React.FC<{ isOpen: boolean; onClose: () => void 
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in"
-      aria-hidden="true"
     >
       <div
         ref={dialogRef}

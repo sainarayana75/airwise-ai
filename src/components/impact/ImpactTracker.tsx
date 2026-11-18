@@ -211,7 +211,7 @@ export const ImpactTracker: React.FC = () => {
                   color: '#fff',
                   fontSize: '12px',
                 }}
-                formatter={(val: any) => [`${val} kg CO2e Avoided`, 'Carbon Saved']}
+                formatter={(val: number | string | (number | string)[] | undefined) => [`${val ?? 0} kg CO2e Avoided`, 'Carbon Saved']}
                 labelFormatter={(label) => `Day: ${label}`}
               />
               <Bar dataKey="co2SavedKg" fill="#059669" radius={[8, 8, 0, 0]} />

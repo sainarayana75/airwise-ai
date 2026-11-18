@@ -183,8 +183,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     try {
       const data = await fetchEnvironmentalData(location);
       setEnvData(data);
-    } catch (err: any) {
-      setEnvError(err?.message || 'Failed to fetch environmental data.');
+    } catch (err: unknown) {
+      setEnvError(err instanceof Error ? err.message : 'Failed to fetch environmental data.');
     } finally {
       setIsLoadingEnv(false);
     }
